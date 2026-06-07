@@ -320,6 +320,105 @@ export class ReportGenerator {
     return filePath;
   }
 
+  private drawBarChart(
+    doc: typeof PDFDocument.prototype,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    data: { label: string; value: number; color?: string }[],
+    title: string
+  ): void {
+    const padding = 40;
+    const chartWidth = width - padding * 2;
+    const chartHeight = height - padding - 20;
+    const maxValue = Math.max(...data.map((d) => d.value), 1);
+    const barWidth = (chartWidth / data.length) * 0.7;
+    const barGap = (chartWidth / data.length) * 0.3;
+
+    doc.fontSize(10).font('Helvetica-Bold').text(title, x, y - 20, { width });
+    doc.font('Helvetica');
+
+    data.forEach((item, i) => {
+      const barHeight = (item.value / maxValue) * chartHeight;
+      const barX = x + padding + i * (barWidth + barGap);
+      const barY = y + padding + chartHeight - barHeight;
+
+      const color = item.color || this.getChartColor(i);
+      doc.fillColor(color).rect(barX, barY, barWidth, barHeight).fill();
+
+      doc.fillColor('#333').fontSize(8);
+      doc.text(item.label, barX, y + padding + chartHeight + 5, { width: barWidth, align: 'center' });
+      doc.text(`¥${Math.round(item.value).toLocaleString()}`, barX, barY - 12, { width: barWidth, align: 'center' });
+    });
+
+    doc.strokeColor('#ccc').lineWidth(0.5);
+    doc.moveTo(x + padding, y + padding);
+    doc.lineTo(x + padding, y + padding + chartHeight);
+    doc.lineTo(x + padding + chartWidth, y + padding + chartHeight);
+    doc.stroke();
+
+    doc.fillColor('#333');
+  }
+
+  private drawPieChart(
+    doc: typeof PDFDocument.prototype,
+    x: number,
+    y: number,
+    radius: number,
+    data: { label: string; value: number; color?: string }[],
+    title: string
+  ): void {
+    const total = data.reduce((sum, d) => sum + d.value, 0);
+    let startAngle = -Math.PI / 2;
+    const centerX = x + radius;
+    const centerY = y + radius + 20;
+
+    doc.fontSize(10).font('Helvetica-Bold').text(title, x - radius, y, { width: radius * 2, align: 'center' });
+    doc.font('Helvetica');
+
+    data.forEach((item, i) => {
+      if (item.value <= 0) return;
+
+      const sliceAngle = (item.value / total) * Math.PI * 2;
+      const color = item.color || this.getChartColor(i);
+
+      doc.fillColor(color);
+      doc.moveTo(centerX, centerY);
+      doc.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+      doc.lineTo(centerX, centerY);
+      doc.fill();
+
+      const midAngle = startAngle + sliceAngle / 2;
+      const labelX = centerX + Math.cos(midAngle) * (radius + 20);
+      const labelY = centerY + Math.sin(midAngle) * (radius + 20);
+
+      doc.fillColor('#333').fontSize(8);
+      const percentage = ((item.value / total) * 100).toFixed(1);
+      doc.text(`${item.label} ${percentage}%`, labelX - 30, labelY, { width: 60, align: 'center' });
+
+      startAngle += sliceAngle;
+    });
+
+    doc.fillColor('#333');
+  }
+
+  private getChartColor(index: number): string {
+    const colors = [
+      '#4472C4',
+      '#ED7D31',
+      '#A5A5A5',
+      '#FFC000',
+      '#5B9BD5',
+      '#70AD47',
+      '#7030A0',
+      '#C00000',
+      '#00B050',
+      '#00B0F0',
+    ];
+    return colors[index % colors.length];
+  }
+
   async exportToPDF(analysis: PayrollAnalysis): Promise<string> {
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({ size: 'A4', margin: 50 });
@@ -330,52 +429,113 @@ export class ReportGenerator {
 
       doc.pipe(stream);
 
-      doc.fontSize(20).text('薪酬分析报告', { align: 'center' });
+      doc.fontSize(24).font('Helvetica-Bold').fillColor('#2c5aa0').text('薪酬分析报告', { align: 'center' });
       doc.moveDown();
-      doc.fontSize(14).text(`${analysis.year}年${analysis.month}月`, { align: 'center' });
+      doc.fontSize(16).fillColor('#666').text(`${analysis.year}年${analysis.month}月`, { align: 'center' });
       doc.moveDown(2);
+      doc.fillColor('#333').font('Helvetica');
 
-      doc.fontSize(12).text('一、总体概况', { underline: true });
+      doc.fontSize(14).font('Helvetica-Bold').text('一、总体概况', { underline: true });
       doc.moveDown();
-      doc.fontSize(10);
-      doc.text(`员工总数: ${analysis.totalEmployees} 人`);
-      doc.text(`应发工资总额: ¥${analysis.totalGrossSalary.toLocaleString()}`);
-      doc.text(`实发工资总额: ¥${analysis.totalNetSalary.toLocaleString()}`);
-      doc.text(`个税总额: ¥${analysis.totalTax.toLocaleString()}`);
-      doc.moveDown();
-      doc.text(`人均应发工资: ¥${analysis.averageGrossSalary.toLocaleString()}`);
-      doc.text(`人均实发工资: ¥${analysis.averageNetSalary.toLocaleString()}`);
-      doc.text(`人均总成本: ¥${analysis.averageCostPerEmployee.toLocaleString()}`);
-      doc.moveDown();
+      doc.fontSize(11).font('Helvetica');
+
+      const summaryItems = [
+        { label: '员工总数', value: `${analysis.totalEmployees} 人` },
+        { label: '应发工资总额', value: `¥${analysis.totalGrossSalary.toLocaleString()}` },
+        { label: '实发工资总额', value: `¥${analysis.totalNetSalary.toLocaleString()}` },
+        { label: '个税总额', value: `¥${analysis.totalTax.toLocaleString()}` },
+        { label: '人均应发工资', value: `¥${analysis.averageGrossSalary.toLocaleString()}` },
+        { label: '人均实发工资', value: `¥${analysis.averageNetSalary.toLocaleString()}` },
+        { label: '人均总成本', value: `¥${analysis.averageCostPerEmployee.toLocaleString()}` },
+      ];
+
+      summaryItems.forEach((item) => {
+        doc.text(`• ${item.label}: ${item.value}`);
+      });
 
       if (analysis.yearOverYear) {
-        doc.text(`同比增长率: ${analysis.yearOverYear.growthRate}%`);
+        doc.text(`• 同比增长率: ${analysis.yearOverYear.growthRate}%`);
       }
       if (analysis.monthOverMonth) {
-        doc.text(`环比增长率: ${analysis.monthOverMonth.growthRate}%`);
+        doc.text(`• 环比增长率: ${analysis.monthOverMonth.growthRate}%`);
       }
+
       doc.moveDown(2);
 
-      doc.fontSize(12).text('二、部门对比', { underline: true });
+      const costBreakdown = [
+        { label: '应发工资', value: analysis.totalGrossSalary, color: '#4472C4' },
+        { label: '社保企业', value: analysis.totalSocialSecurity.employer, color: '#ED7D31' },
+        { label: '公积金企业', value: analysis.totalHousingFund.employer, color: '#70AD47' },
+      ];
+
+      const pageWidth = 500;
+      this.drawPieChart(doc, 100, doc.y, 80, costBreakdown, '人力成本构成');
+
+      doc.moveDown(5);
+      doc.fontSize(14).font('Helvetica-Bold').text('二、部门对比', { underline: true });
       doc.moveDown();
-      doc.fontSize(10);
+      doc.font('Helvetica');
+
+      const deptChartData = analysis.departmentBreakdown
+        .filter((d) => d.totalGross > 0)
+        .map((d) => ({
+          label: d.departmentName.slice(0, 4),
+          value: d.totalGross,
+        }));
+
+      if (deptChartData.length > 0) {
+        this.drawBarChart(doc, 50, doc.y, 480, 180, deptChartData, '各部门薪酬总额对比');
+      }
+
+      doc.moveDown(6);
+      doc.fontSize(11);
       analysis.departmentBreakdown.forEach((dept) => {
         doc.text(
-          `${dept.departmentName}: ${dept.employeeCount}人, 总额¥${dept.totalGross.toLocaleString()}, 人均¥${dept.averageGross.toLocaleString()}, 预算使用率${dept.budgetUsage}%`
+          `• ${dept.departmentName}: ${dept.employeeCount}人, 总额¥${dept.totalGross.toLocaleString()}, 人均¥${dept.averageGross.toLocaleString()}, 预算使用率${dept.budgetUsage}%`
         );
       });
-      doc.moveDown(2);
 
-      doc.fontSize(12).text('三、个税分布', { underline: true });
+      doc.addPage();
+      doc.fontSize(14).font('Helvetica-Bold').text('三、个税分布', { underline: true });
       doc.moveDown();
-      doc.fontSize(10);
+      doc.font('Helvetica');
+
+      const taxChartData = analysis.taxDistribution
+        .filter((d) => d.count > 0)
+        .map((d) => ({
+          label: d.bracket,
+          value: d.count,
+        }));
+
+      if (taxChartData.length > 0) {
+        this.drawBarChart(doc, 50, doc.y, 480, 180, taxChartData, '各税级人数分布');
+      }
+
+      doc.moveDown(6);
+      doc.fontSize(11);
       analysis.taxDistribution.forEach((d) => {
         if (d.count > 0) {
           doc.text(
-            `${d.bracket}区间: ${d.count}人, 个税总额¥${d.totalTax.toLocaleString()}, 人均¥${d.averageTax.toLocaleString()}`
+            `• ${d.bracket}区间: ${d.count}人, 个税总额¥${d.totalTax.toLocaleString()}, 人均¥${d.averageTax.toLocaleString()}`
           );
         }
       });
+
+      doc.moveDown(2);
+
+      const avgChartData = analysis.departmentBreakdown
+        .filter((d) => d.averageGross > 0)
+        .map((d) => ({
+          label: d.departmentName.slice(0, 4),
+          value: d.averageGross,
+        }));
+
+      if (avgChartData.length > 0) {
+        this.drawBarChart(doc, 50, doc.y, 480, 180, avgChartData, '各部门人均薪酬对比');
+      }
+
+      doc.moveDown(10);
+      doc.fontSize(10).fillColor('#999').text('--- 报告由企业薪酬管理系统自动生成 ---', { align: 'center' });
 
       doc.end();
 

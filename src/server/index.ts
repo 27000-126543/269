@@ -14,7 +14,7 @@ import { deductionRouter } from './routes/deduction';
 const logger = createModuleLogger('Server');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 
 app.use(cors({
   origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],

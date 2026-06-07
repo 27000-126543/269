@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware, requireApprovalLevel } from '../middleware/auth';
 import { reportGenerator } from '../../services/ReportGenerator';
+import { dataStore } from '../../store/DataStore';
 
 const router = Router();
 
@@ -26,12 +27,10 @@ router.get('/export/excel/:year/:month', authMiddleware, async (req: Request, re
       parseInt(year),
       parseInt(month)
     );
-    const payrollRecords = await reportGenerator['payrollEngine']['getPayrollHistory']({
-      startYear: parseInt(year),
-      startMonth: parseInt(month),
-      endYear: parseInt(year),
-      endMonth: parseInt(month),
-    });
+    const payrollRecords = dataStore.getPayrollByMonth(
+      parseInt(year),
+      parseInt(month)
+    );
 
     const filePath = await reportGenerator.exportToExcel(analysis, payrollRecords);
     const fileName = filePath.split('/').pop();
