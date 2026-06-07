@@ -1,0 +1,39 @@
+{
+  "name": "enterprise-payroll-system",
+  "version": "1.0.0",
+  "description": "企业级自动化薪酬核算与社保公积金管理系统",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "jest",
+    "generate-sample": "ts-node src/scripts/generateSampleData.ts",
+    "run-payroll": "ts-node src/scripts/runPayroll.ts",
+    "generate-report": "ts-node src/scripts/generateReport.ts"
+  },
+  "dependencies": {
+    "date-fns": "^3.6.0",
+    "exceljs": "^4.4.0",
+    "pdfkit": "^0.15.0",
+    "nodemailer": "^6.9.13",
+    "csv-writer": "^1.6.0",
+    "uuid": "^9.0.1",
+    "winston": "^3.13.0",
+    "dotenv": "^16.4.5",
+    "p-limit": "^5.0.0",
+    "crypto-js": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "@types/pdfkit": "^0.13.4",
+    "@types/nodemailer": "^6.4.15",
+    "@types/uuid": "^9.0.8",
+    "@types/crypto-js": "^4.2.2",
+    "typescript": "^5.4.5",
+    "ts-node": "^10.9.2",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.12",
+    "ts-jest": "^29.1.2"
+  }
+}
