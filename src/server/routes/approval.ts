@@ -22,8 +22,7 @@ router.get('/pending', authMiddleware, async (req: Request, res: Response) => {
       const summary = dataStore.getDepartmentSummary(dept.id, year, month);
       if (
         summary &&
-        summary.approvalStatus === 'pending' &&
-        summary.requiredApprovalLevel <= req.user.approvalLevel
+        summary.approvalStatus === 'pending'
       ) {
         pendingItems.push(summary);
       }
