@@ -329,17 +329,26 @@ export class ReportGenerator {
     data: { label: string; value: number; color?: string }[],
     title: string
   ): void {
+    const validData = data.filter((d) => isFinite(d.value) && d.value > 0);
+    
+    if (validData.length === 0) {
+      doc.fontSize(10).font('Helvetica-Bold').text(title, x, y - 20, { width });
+      doc.font('Helvetica').fontSize(8).fillColor('#999').text('暂无数据', x, y + 50, { width, align: 'center' });
+      doc.fillColor('#333');
+      return;
+    }
+
     const padding = 40;
     const chartWidth = width - padding * 2;
     const chartHeight = height - padding - 20;
-    const maxValue = Math.max(...data.map((d) => d.value), 1);
-    const barWidth = (chartWidth / data.length) * 0.7;
-    const barGap = (chartWidth / data.length) * 0.3;
+    const maxValue = Math.max(...validData.map((d) => d.value), 1);
+    const barWidth = (chartWidth / validData.length) * 0.7;
+    const barGap = (chartWidth / validData.length) * 0.3;
 
     doc.fontSize(10).font('Helvetica-Bold').text(title, x, y - 20, { width });
     doc.font('Helvetica');
 
-    data.forEach((item, i) => {
+    validData.forEach((item, i) => {
       const barHeight = (item.value / maxValue) * chartHeight;
       const barX = x + padding + i * (barWidth + barGap);
       const barY = y + padding + chartHeight - barHeight;
@@ -370,6 +379,14 @@ export class ReportGenerator {
     title: string
   ): void {
     const total = data.reduce((sum, d) => sum + d.value, 0);
+    
+    if (total <= 0) {
+      doc.fontSize(10).font('Helvetica-Bold').text(title, x - radius, y, { width: radius * 2, align: 'center' });
+      doc.font('Helvetica').fontSize(8).fillColor('#999').text('暂无数据', x - radius, y + radius, { width: radius * 2, align: 'center' });
+      doc.fillColor('#333');
+      return;
+    }
+
     let startAngle = -Math.PI / 2;
     const centerX = x + radius;
     const centerY = y + radius + 20;

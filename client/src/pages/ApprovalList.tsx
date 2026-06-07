@@ -207,7 +207,7 @@ export default function ApprovalList() {
                   dataSource={historyList}
                   rowKey={(r) => `${r.departmentId}-${r.year}-${r.month}`}
                   loading={loading}
-                  pagination
+                  pagination={{ pageSize: 10 }}
                 />
               ),
             },

@@ -119,7 +119,7 @@ export default function DeductionSubmit() {
                   <div>
                     {item.changes && Object.entries(item.changes).map(([key, value]) => (
                       <span key={key} style={{ marginRight: '12px' }}>
-                        {key}: {value}
+                        {key}: {String(value)}
                       </span>
                     ))}
                     {item.reviewComment && (

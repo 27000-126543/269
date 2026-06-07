@@ -39,6 +39,13 @@ export interface UserInfo {
   approvalLevel: number;
 }
 
+export interface ApiResult<T = any> {
+  success?: boolean;
+  message?: string;
+  data?: T;
+  [key: string]: any;
+}
+
 export const authApi = {
   login: (employeeNo: string, password: string) =>
     api.post<any, AuthResponse>('/auth/login', { employeeNo, password }),
@@ -112,9 +119,9 @@ export const approvalApi = {
   getHistory: (year?: number, month?: number) =>
     api.get<any, DepartmentSummary[]>('/approval/history', { params: { year, month } }),
   approve: (departmentId: string, year: number, month: number, comment?: string) =>
-    api.post(`/approval/approve/${departmentId}/${year}/${month}`, { comment }),
+    api.post<any, ApiResult>(`/approval/approve/${departmentId}/${year}/${month}`, { comment }),
   reject: (departmentId: string, year: number, month: number, reason: string) =>
-    api.post(`/approval/reject/${departmentId}/${year}/${month}`, { reason }),
+    api.post<any, ApiResult>(`/approval/reject/${departmentId}/${year}/${month}`, { reason }),
 };
 
 export interface PayrollAnalysis {
@@ -155,7 +162,7 @@ export const deductionApi = {
   getCurrent: () => api.get<any, any>('/deduction/current'),
   getMyRequests: () => api.get<any, any[]>('/deduction/my-requests'),
   submitSpecialDeduction: (changes: any) =>
-    api.post('/deduction/special-deduction', changes),
+    api.post<any, ApiResult>('/deduction/special-deduction', changes),
 };
 
 export default api;
